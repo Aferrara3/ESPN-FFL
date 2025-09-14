@@ -29,3 +29,23 @@ def safe_figure_save(fig_or_plt, outpath, **kwargs):
     else:                                # pyplot module
         plt.savefig(outpath, **kwargs)
     plt.close()
+
+import pandas as pd
+from src.data import load_cache_entry
+
+def cache_summary(years, max_period=20, league_id=None, views=("mMatchup","mTeam")):
+    from src.data import cache_path
+    import pandas as pd
+
+    rows = []
+    for year in years:
+        row = {}
+        for period in range(1, max_period+1):
+            path = cache_path(league_id, year, period, views)
+            if not path.exists():
+                row[period] = "⬜"
+            else:
+                val = load_cache_entry(league_id, year, period, views)
+                row[period] = "✅" if val else "✗"
+        rows.append(pd.Series(row, name=year))
+    return pd.DataFrame(rows)
