@@ -6,7 +6,6 @@ from src.data import load_cache_entry, save_cache_entry
 logger = logging.getLogger(__name__)
 BASE_URL = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl"
 
-
 def get_league_data(
     league_id: str,
     year: int,
@@ -16,6 +15,7 @@ def get_league_data(
     headers=None,
     use_cache: bool = True,
     force_refresh: bool = False,
+    cache_only: bool = False,
 ):
     """
     Fetch and cache raw ESPN league data for a given year/scoring period.
@@ -29,6 +29,10 @@ def get_league_data(
         cached = load_cache_entry(league_id, year, scoring_period, views)
         if cached is not None:
             return cached
+    
+    if cache_only:
+        logger.warning(f"Cache-only mode enabled, but no cache entry found. Skipping {league_id}, {year}, {scoring_period}, {views}.")
+        return None
 
     # --- Fetch from ESPN API ---
     url = f"{BASE_URL}/seasons/{year}/segments/0/leagues/{league_id}"
@@ -40,7 +44,10 @@ def get_league_data(
             url,
             cookies=cookies,
             headers=headers,
-            params={"scoringPeriodId": scoring_period, "view": views},
+            params={"scoringPeriodId": scoring_period, 
+                    "SPID": scoring_period,
+                    "matchupPeriodId=": scoring_period,
+                    "view": views},
             timeout=15,
         )
         resp.raise_for_status()
